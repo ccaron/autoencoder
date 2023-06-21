@@ -1,5 +1,8 @@
+# https://pyimagesearch.com/2020/02/17/autoencoders-with-keras-tensorflow-and-deep-learning/
+
 import sys
 
+import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 from tensorflow.keras import backend as K
@@ -52,7 +55,7 @@ def Build(width, height, depth, filters=(32, 64), latentDim=16):
 def main() -> int:
     encoder, decoder, autoencoder = Build(28, 28, 1)
 
-    EPOCHS = 25
+    EPOCHS = 2
     BS = 32
 
     ((trainX, _), (testX, _)) = mnist.load_data()
@@ -78,7 +81,27 @@ def main() -> int:
     plt.xlabel("Epoch #")
     plt.ylabel("Loss/Accuracy")
     plt.legend(loc="lower left")
-    plt.show()
+    plt.savefig("plot.png")
+
+    # Make some predictions
+    decoded = autoencoder.predict(testX)
+    outputs = None
+    # loop over our number of output samples
+    for i in range(0, 8):
+        # grab the original image and reconstructed image
+        original = (testX[i] * 255).astype("uint8")
+        recon = (decoded[i] * 255).astype("uint8")
+        # stack the original and reconstructed image side-by-side
+        output = np.hstack([original, recon])
+        # if the outputs array is empty, initialize it as the current
+        # side-by-side image display
+        if outputs is None:
+            outputs = output
+        # otherwise, vertically stack the outputs
+        else:
+            outputs = np.vstack([outputs, output])
+    # save the outputs image to disk
+    cv2.imwrite("output.png", outputs)
 
     return 0
 
