@@ -55,7 +55,7 @@ def Build(width, height, depth, filters=(32, 64), latentDim=16):
 def main() -> int:
     encoder, decoder, autoencoder = Build(28, 28, 1)
 
-    EPOCHS = 2
+    EPOCHS = 3
     BS = 32
 
     ((trainX, _), (testX, _)) = mnist.load_data()
@@ -65,11 +65,20 @@ def main() -> int:
     trainX = trainX.astype("float32") / 255.0
     testX = testX.astype("float32") / 255.0
 
+    trainNoise = np.random.normal(loc=0.5, scale=0.5, size=trainX.shape)
+    testNoise = np.random.normal(loc=0.5, scale=0.5, size=testX.shape)
+    trainXNoisy = np.clip(trainX + trainNoise, 0, 1)
+    testXNoisy = np.clip(testX + testNoise, 0, 1)
+
     opt = Adam(lr=1e-3)
     autoencoder.compile(loss="mse", optimizer=opt)
 
     H = autoencoder.fit(
-        trainX, trainX, validation_data=(testX, testX), epochs=EPOCHS, batch_size=BS
+        trainXNoisy,
+        trainX,
+        validation_data=(testX, testX),
+        epochs=EPOCHS,
+        batch_size=BS,
     )
 
     N = np.arange(0, EPOCHS)
@@ -89,7 +98,7 @@ def main() -> int:
     # loop over our number of output samples
     for i in range(0, 8):
         # grab the original image and reconstructed image
-        original = (testX[i] * 255).astype("uint8")
+        original = (testXNoisy[i] * 255).astype("uint8")
         recon = (decoded[i] * 255).astype("uint8")
         # stack the original and reconstructed image side-by-side
         output = np.hstack([original, recon])
